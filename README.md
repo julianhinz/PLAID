@@ -1,18 +1,22 @@
 <p align="center">
-  <img src="logo.png" width="120" alt="PLAID">
+  <img src="logo.png" width="280" alt="PLAID">
 </p>
 
 # PLAID: Product-Level AI-Derived Indicators Database
 
-Replication code and data for:
+LLM-based pipeline for generating, validating, and applying product-level trade indicators at the HS 6-digit level.
 
-> Brockhaus, C., Hinz, J., & Iodice, I. (2026). *PLAID: Product-Level AI-Derived Indicators Database for International Trade.* Working paper.
+**Authors:** Carsten Brockhaus, [Julian Hinz](https://julianhinz.com), [Irene Iodice](https://ioire.github.io)
 
-**Website & data:** [plaid.julianhinz.com](https://plaid.julianhinz.com) | [trade.ifw-kiel.de/PLAID](https://trade.ifw-kiel.de/PLAID/)
+**Website:** [plaid.julianhinz.com](https://plaid.julianhinz.com) | **Mirror:** [trade.ifw-kiel.de/PLAID](https://trade.ifw-kiel.de/PLAID/) | **API:** [Documentation](https://plaid.julianhinz.com/llms-full.txt)
+
+---
 
 ## What is PLAID?
 
-PLAID classifies all HS 6-digit traded products across seven HS revisions (H0–H6, 1988/92–2022) using an ensemble of four frontier LLMs. Six indicators are available:
+Empirical research in international trade increasingly relies on product-level panel data, but the indicators used to characterize traded products have not kept pace. Classical measures like the Rauch (1999) classification were defined for older nomenclatures and have never been systematically updated. PLAID addresses this gap with a replicable pipeline in which large language models classify products at scale.
+
+Each HS 6-digit product is independently classified by an ensemble of four frontier LLMs, and predictions are aggregated into majority-vote labels with transparent uncertainty measures. Six indicators are available across all seven HS revisions (H0–H6, 1988/92–2022):
 
 | Indicator | Categories | Benchmark |
 |-----------|-----------|-----------|
@@ -23,43 +27,74 @@ PLAID classifies all HS 6-digit traded products across seven HS revisions (H0–
 | **Microchip content** | boolean | OECD ICT goods list |
 | **3TG conflict minerals** | boolean + mineral type | EU 2017/821 |
 
-## Quick start
+## Get the data
 
-### 1. Use the data (no code needed)
+If you just want the indicator files (no code needed):
 
-Download the indicator files from [plaid.julianhinz.com](https://plaid.julianhinz.com/#download) or [trade.ifw-kiel.de/PLAID](https://trade.ifw-kiel.de/PLAID/).
+- **Website:** Browse and download at [plaid.julianhinz.com](https://plaid.julianhinz.com/#download)
+- **Mirror:** [trade.ifw-kiel.de/PLAID](https://trade.ifw-kiel.de/PLAID/)
+- **API:** Query individual products at `https://plaid.julianhinz.com/api/v0.1/{revision}/{code}.json`
 
 ```r
+# Example: load the Rauch classification for HS 1992
 library(data.table)
-rauch <- fread("PLAID_v0.1_rauch_H0.csv.gz")
+rauch <- fread("https://plaid.julianhinz.com/data/PLAID_v0.1_rauch_H0.csv.gz")
 ```
 
-### 2. Reproduce the LLM pipeline
+Files are CSV (gzipped), one per indicator × HS revision. All files include the HS 6-digit code, product description, majority-vote classification, and per-category vote shares for uncertainty quantification.
 
-**Requirements:** R (≥ 4.3), packages installed automatically via `pacman`. An [OpenRouter API key](https://openrouter.ai/) is needed only if re-running LLM classifications.
+## Replicate the pipeline
+
+### Prerequisites
+
+- **R** (≥ 4.3) — packages are installed automatically via `pacman`
+- **Python** (only for HS explanatory notes scraper)
+- **[OpenRouter API key](https://openrouter.ai/)** set as `OPENROUTER_API_KEY` environment variable (only if re-running LLM classifications)
+
+### External data
+
+The following files are freely available but too large to include in the repository. Download them manually and place in the indicated directories.
+
+| File | Size | Source | Place in |
+|------|------|--------|----------|
+| CEPII Gravity V202211 | ~200 MB | [cepii.fr/gravity](https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp?id=8) | `input/gravity/` |
+| HS92 bilateral trade | ~3 GB | [atlas.cid.harvard.edu](https://atlas.cid.harvard.edu/about-data) | `input/trade_data/HS92/` |
+| SITC bilateral trade | ~2 GB | [atlas.cid.harvard.edu](https://atlas.cid.harvard.edu/about-data) | `input/trade_data/SITC/` |
+| HS nomenclature | ~5 MB | [UN STATS](https://unstats.un.org/unsd/classifications/Econ) | `input/product_descriptions/` |
+| HS concordances | ~1 MB | [WITS](https://wits.worldbank.org/product_concordance.html) | `input/concordance/` |
+
+### Run the pipeline
 
 ```bash
 export OPENROUTER_API_KEY="your-key-here"
 
-# All 6 indicators across H0–H6
+# Full pipeline: all 6 indicators across H0–H6 with cross-revision deduplication
 make plaid MODELS="mistralai/mistral-small-2603 google/gemini-2.5-flash"
 
-# Single indicator
-make plaid/rauch
+# Individual indicator pipelines
+./code/create_hs_rauch/run_hs_rauch.sh MODEL [YEAR] [HS_VER]
+./code/create_hs_perishability/run_hs_perishability.sh MODEL [HS_VER]
+./code/create_hs_bec/run_hs_bec.sh MODEL [HS_VER]
+./code/create_hs_hazmat/run_hs_hazmat.sh MODEL [HS_VER]
+./code/create_hs_microchip/run_hs_microchip.sh MODEL [HS_VER]
+./code/create_hs_3tg/run_hs_3tg.sh MODEL [HS_VER]
 
-# Consistency checks
-make consistency
+# SITC Rauch replication
+./code/recreate_rauch_1995/run_and_compare_two_models.sh
 
-# Build the database
+# Assemble indicator database
 Rscript code/build_database.R
+
+# Cross-model consistency checks
+make consistency
 ```
 
-### 3. Reproduce paper tables and figures
+### Reproduce paper tables and figures
 
-The gravity replication and uncertainty analysis require external data files (see below).
+The gravity replication and uncertainty analysis require the external data files listed above.
 
 ```bash
-# Rauch gravity replication (Table 3)
+# Rauch gravity replication (Table 3 in the technical paper)
 Rscript code/09_rauch_replication_table.R
 
 # Uncertainty screen figure (Figure 3)
@@ -70,34 +105,44 @@ Rscript code/create_hs_rauch/07_analysis.R
 Rscript code/create_hs_perishability/07_analysis.R
 ```
 
-### External data (not included)
+## Project structure
 
-The following files are required for the gravity regressions and validation scripts. They are freely available but too large to include in the repository.
-
-| File | Size | Source | Place in |
-|------|------|--------|----------|
-| CEPII Gravity V202211 | ~200 MB | [cepii.fr/gravity](https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp?id=8) | `input/gravity/Gravity_V202211.csv.gz` |
-| HS92 bilateral trade | ~3 GB | [atlas.cid.harvard.edu](https://atlas.cid.harvard.edu/about-data) | `input/trade_data/HS92/` |
-| SITC bilateral trade | ~2 GB | [atlas.cid.harvard.edu](https://atlas.cid.harvard.edu/about-data) | `input/trade_data/SITC/` |
-| HS nomenclature | ~5 MB | [UN STATS](https://unstats.un.org/unsd/classifications/Econ) | `input/product_descriptions/HSCodeandDescription.xlsx` |
-| HS concordances | ~1 MB | [WITS](https://wits.worldbank.org/product_concordance.html) | `input/concordance/` |
-
-## Repository structure
-
-```
+```text
 code/
-  common/              Shared pipeline (LLM caller, dedup, fan-out)
-  create_hs_*/         Per-indicator pipelines
-  recreate_rauch_1995/ SITC replication of Rauch (1999)
-  09_rauch_*           Gravity replication & uncertainty figure
-  build_database.R     Assemble final database
-  99_consistency_checks.R
+├── common/                        # Shared pipeline (LLM caller, dedup, fan-out)
+├── create_hs_rauch/               # Rauch classification (w/r/n)
+├── recreate_rauch_1995/           # SITC-based Rauch replication
+├── create_hs_perishability/       # Perishability (5-class scale)
+├── create_hs_bec/                 # BEC end-use categories
+├── create_hs_hazmat/              # Hazardous materials
+├── create_hs_microchip/           # Microchip/semiconductor content
+├── create_hs_3tg/                 # 3TG conflict minerals
+├── 09_rauch_replication_table.R   # Gravity replication (paper Table 3)
+├── 09_rauch_uncertainty_figure.R  # Uncertainty screen (paper Figure 3)
+├── build_database.R               # Assemble indicator database
+└── 99_consistency_checks.R        # Cross-model agreement analysis
+
 input/
-  benchmarks/          Validation benchmarks (BEC, ICT, EU 3TG)
-makefile               Pipeline orchestration
+└── benchmarks/                    # Validation benchmarks (BEC, ICT, EU 3TG)
+
+makefile                           # Pipeline orchestration
 ```
 
-Data (indicator files, tables, figures) are generated by the pipeline and available for download at [plaid.julianhinz.com](https://plaid.julianhinz.com) and [trade.ifw-kiel.de/PLAID](https://trade.ifw-kiel.de/PLAID/).
+## Contribute
+
+We welcome contributions in two forms:
+
+### Suggest a correction
+
+If you believe a product is misclassified, please let us know:
+- **Email:** [tradepolicy@kielinstitut.de](mailto:tradepolicy@kielinstitut.de)
+- **GitHub:** [Open an issue](https://github.com/julianhinz/PLAID/issues/new?labels=correction&title=Correction:+HS+CODE)
+
+### Suggest an indicator
+
+PLAID is designed to grow. If you need a product-level attribute that is not yet covered:
+- **Email:** [tradepolicy@kielinstitut.de](mailto:tradepolicy@kielinstitut.de)
+- **GitHub:** [Open an issue](https://github.com/julianhinz/PLAID/issues/new?labels=indicator-suggestion&title=Indicator+suggestion:+)
 
 ## Citation
 
