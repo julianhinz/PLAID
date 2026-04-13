@@ -1,0 +1,32 @@
+system_prompt: "You are an expert trade economist specializing in product end-use classification and national accounts."
+prompts_pattern: "^prompts_hs6_bec.*\\.csv$"
+llm_dir_name: "llm_bec"
+file_suffix: "bec"
+max_toks: 512
+max_toks_gemini: 1024
+gemini_keys: |
+  - "code_system" (string, always "HS")
+  - "code" (string, the HS code)
+  - "short_description" (string, <= 20 words)
+  - "bec" (string: capital, intermediate, or consumption)
+  - "reasoning" (ONE short sentence justifying the classification)
+  - "confidence" (number in [0,1])
+
+# Parsing configuration for 04_save_indicators.R
+parse:
+  primary_field: "bec"
+  output_prefix: "bec"
+  fields:
+    - name: "short_description"
+      column: "short_description"
+      type: "character"
+    - name: "bec"
+      column: "bec"
+      type: "categorical"
+      valid_values: ["capital", "intermediate", "consumption"]
+    - name: "reasoning"
+      column: "reasoning"
+      type: "character"
+    - name: "confidence"
+      column: "confidence"
+      type: "numeric"

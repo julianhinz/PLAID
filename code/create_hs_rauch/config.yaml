@@ -1,0 +1,45 @@
+system_prompt: "You are an expert trade economist."
+prompts_pattern: "^prompts_hs6_rauch_full.*\\.csv$"
+llm_dir_name: "llm"
+file_suffix: "rauch"
+max_toks: 768
+max_toks_gemini: 2048
+gemini_keys: |
+  - "code_system" (string, always "HS")
+  - "code" (string, the HS code)
+  - "short_description" (string, <= 20 words)
+  - "rauch_category" (one of "w", "r", or "n")
+  - "reasoning" (ONE short sentence that justifies the category; no step-by-step reasoning)
+  - "confidence" (number in [0,1])
+
+# Parsing configuration for 04_save_indicators.R
+parse:
+  primary_field: "rauch_category"
+  output_prefix: "rauch"
+  fields:
+    - name: "short_description"
+      column: "short_description"
+      type: "character"
+    - name: "rauch_category"
+      column: "rauch_category"
+      type: "categorical"
+      valid_values: ["w", "r", "n"]
+      aliases:
+        w: ["organized-exchange", "homogeneous"]
+        r: ["reference-priced"]
+        n: ["differentiated"]
+    - name: "reasoning"
+      column: "reasoning"
+      type: "character"
+    - name: "confidence"
+      column: "confidence"
+      type: "numeric"
+  fallback_patterns:
+    rauch_category:
+      - pattern: '"rauch_category"\\s*:\\s*"(w|r|n)"'
+        flags: "(?i)"
+      - backtick_pattern: "`(w|r|n)`"
+      - text_patterns:
+          w: ["organized exchange", "homogeneous"]
+          r: ["reference-?priced", "benchmark price"]
+          n: ["differentiated"]

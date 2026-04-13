@@ -1,0 +1,40 @@
+system_prompt: "You are an expert on mineral supply chains, conflict minerals regulation, and product composition."
+prompts_pattern: "^prompts_hs6_3tg.*\\.csv$"
+llm_dir_name: "llm_3tg"
+file_suffix: "3tg"
+max_toks: 512
+max_toks_gemini: 2048
+gemini_keys: |
+  - "code_system" (string, always "HS")
+  - "code" (string, the HS code)
+  - "short_description" (string, <= 20 words)
+  - "conflict_mineral" (boolean true or false)
+  - "specific_mineral" (string: "tin", "tantalum", "tungsten", "gold", or "none")
+  - "reasoning" (ONE short sentence justifying the classification)
+  - "confidence" (number in [0,1])
+
+# Parsing configuration for 04_save_indicators.R
+parse:
+  primary_field: "conflict_mineral"
+  output_prefix: "3tg"
+  fields:
+    - name: "short_description"
+      column: "short_description"
+      type: "character"
+    - name: "conflict_mineral"
+      column: "conflict_mineral"
+      type: "boolean"
+    - name: "specific_mineral"
+      column: "specific_mineral"
+      type: "categorical"
+      valid_values: ["tin", "tantalum", "tungsten", "gold", "none"]
+    - name: "reasoning"
+      column: "reasoning"
+      type: "character"
+    - name: "confidence"
+      column: "confidence"
+      type: "numeric"
+  post_process:
+    - rule: "if conflict_mineral == FALSE and (is.na(specific_mineral) or specific_mineral != 'none') then specific_mineral = 'none'"
+    - warn_if: "conflict_mineral == TRUE and (is.na(specific_mineral) or specific_mineral == 'none')"
+      message: "%d rows have conflict_mineral=TRUE but specific_mineral='none' or NA. Check model outputs."

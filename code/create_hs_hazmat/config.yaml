@@ -1,0 +1,31 @@
+system_prompt: "You are an expert on hazardous materials classification."
+prompts_pattern: "^prompts_hs6_hazmat.*\\.csv$"
+llm_dir_name: "llm_hazmat"
+file_suffix: "hazmat"
+max_toks: 512
+max_toks_gemini: 1024
+gemini_keys: |
+  - "code_system" (string, always "HS")
+  - "code" (string, the HS code)
+  - "short_description" (string, <= 20 words)
+  - "hazardous" (boolean)
+  - "reasoning" (string)
+  - "confidence" (number in [0,1])
+
+# Parsing configuration for 04_save_indicators.R
+parse:
+  primary_field: "hazardous"
+  output_prefix: "hazmat"
+  fields:
+    - name: "short_description"
+      column: "short_description"
+      type: "character"
+    - name: "hazardous"
+      column: "hazardous"
+      type: "boolean"
+    - name: "reasoning"
+      column: "reasoning"
+      type: "character"
+    - name: "confidence"
+      column: "confidence"
+      type: "numeric"

@@ -1,0 +1,39 @@
+system_prompt: "You are an expert trade economist specializing in product perishability and time-sensitivity."
+prompts_pattern: "^prompts_hs6_perishability.*\\.csv$"
+llm_dir_name: "llm_perishability"
+file_suffix: "perishability"
+max_toks: 768
+max_toks_gemini: 2048
+gemini_keys: |
+  - "code_system" (string, always "HS")
+  - "code" (string, the HS code)
+  - "short_description" (string, <= 20 words)
+  - "perishability_class" (integer 1-5)
+  - "half_life_days" (number, point estimate in days)
+  - "reasoning" (ONE short sentence that justifies the classification; no step-by-step reasoning)
+  - "confidence" (number in [0,1])
+
+# Parsing configuration for 04_save_indicators.R
+parse:
+  primary_field: "perishability_class"
+  output_prefix: "perishability"
+  fields:
+    - name: "short_description"
+      column: "short_description"
+      type: "character"
+    - name: "perishability_class"
+      column: "perishability_class"
+      type: "integer"
+      valid_range: [1, 5]
+    - name: "half_life_days"
+      column: "half_life_days"
+      type: "numeric"
+    - name: "reasoning"
+      column: "reasoning"
+      type: "character"
+    - name: "evidence_type"
+      column: "evidence_type"
+      type: "character"
+    - name: "confidence"
+      column: "confidence"
+      type: "numeric"

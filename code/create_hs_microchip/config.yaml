@@ -1,0 +1,31 @@
+system_prompt: "You are an expert on electronics, semiconductor technology, and product composition."
+prompts_pattern: "^prompts_hs6_microchip.*\\.csv$"
+llm_dir_name: "llm_microchip"
+file_suffix: "microchip"
+max_toks: 512
+max_toks_gemini: 1024
+gemini_keys: |
+  - "code_system" (string, always "HS")
+  - "code" (string, the HS code)
+  - "short_description" (string, <= 20 words)
+  - "microchip_content" (boolean: true or false)
+  - "reasoning" (ONE short sentence justifying the classification)
+  - "confidence" (number in [0,1])
+
+# Parsing configuration for 04_save_indicators.R
+parse:
+  primary_field: "microchip_content"
+  output_prefix: "microchip"
+  fields:
+    - name: "short_description"
+      column: "short_description"
+      type: "character"
+    - name: "microchip_content"
+      column: "microchip_content"
+      type: "boolean"
+    - name: "reasoning"
+      column: "reasoning"
+      type: "character"
+    - name: "confidence"
+      column: "confidence"
+      type: "numeric"
