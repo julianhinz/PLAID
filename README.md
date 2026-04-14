@@ -72,7 +72,7 @@ export OPENROUTER_API_KEY="your-key-here"
 make plaid MODELS="mistralai/mistral-small-2603 google/gemini-2.5-flash"
 
 # Individual indicator pipelines
-./code/create_hs_rauch/run_hs_rauch.sh MODEL [YEAR] [HS_VER]
+./code/create_hs_rauch/run_hs_rauch.sh MODEL [HS_VER]
 ./code/create_hs_perishability/run_hs_perishability.sh MODEL [HS_VER]
 ./code/create_hs_bec/run_hs_bec.sh MODEL [HS_VER]
 ./code/create_hs_hazmat/run_hs_hazmat.sh MODEL [HS_VER]
